@@ -29,8 +29,10 @@ export default () => {
     let angularVel = new THREE.Vector3();
     let physicsIds = [];
     let glassArray = [];
+    let defaultSpawn = new THREE.Vector3(-25, 0, -5);
+
     (async () => {
-        const u = `${baseUrl}/assets/stange.glb`;
+        const u = `${baseUrl}/assets/stange.glb`; // must prefix "/bride-game" when working locally
         let gltf = await new Promise((accept, reject) => {
             const {gltfLoader} = useLoaders();
             gltfLoader.load(u, accept, function onprogress() {}, reject);
@@ -40,7 +42,7 @@ export default () => {
         app.updateMatrixWorld();
     })();
     (async () => {
-        const u = `${baseUrl}/assets/rest.glb`;
+        const u = `${baseUrl}/assets/rest.glb`; // must prefix "/bride-game" when working locally
         let gltf = await new Promise((accept, reject) => {
             const {gltfLoader} = useLoaders();
             gltfLoader.load(u, accept, function onprogress() {}, reject);
@@ -91,6 +93,17 @@ export default () => {
     useFrame(({ timeDiff, timestamp }) => {
 
       if(localPlayer.avatar) {
+
+        if (localPlayer.hasAction('narutoRun') ){
+            localPlayer.removeAction('narutoRun');
+            // this doesn't affect speed unfortunately, we need ways to completely disable actions in some scenes.       
+        }
+
+        if (localPlayer.hasAction('fly') ){
+            localPlayer.removeAction('fly');
+            // works but has stutter when pressed       
+        }
+                
         const downQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI*0.5);
         const resultDown = physics.raycast(localPlayer.position, downQuat);
         if(resultDown && localPlayer.characterPhysics.lastGroundedTime === timestamp) {
@@ -101,6 +114,9 @@ export default () => {
                 foundObj.glassObj.visible = false;
                 physics.disableGeometry(foundObj);
                 physics.disableGeometryQueries(foundObj);
+
+                // Ensures falling and not being able to sprint/run to the next glass plate
+                physics.setCharacterControllerPosition(localPlayer.characterController, new THREE.Vector3(localPlayer.position.x, localPlayer.position.y - 1, localPlayer.position.z));
               }
             }
           }
@@ -108,9 +124,9 @@ export default () => {
         }
       }
 
-
+      // Resets character position to spawn position
       if(localPlayer.position.y < -25) {
-        physics.setCharacterControllerPosition(localPlayer.characterController, new THREE.Vector3(-25, 0, -5));
+        physics.setCharacterControllerPosition(localPlayer.characterController, defaultSpawn);
       }
 
       
